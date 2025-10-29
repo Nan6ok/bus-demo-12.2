@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>香港巴士與電車實時監控系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2a3a7c);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            color: #1a2a6c;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+        }
+
+        .cctv-section, .bus-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .section-title {
+            color: #1a2a6c;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 15px;
+        }
+
+        .camera-item {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .camera-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .camera-header {
+            background: #1a2a6c;
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .camera-status {
+            background: #4CAF50;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+
+        .camera-placeholder {
+            height: 200px;
+            background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+
+        .camera-info {
+            padding: 10px 15px;
+            font-size: 0.9em;
+        }
+
+        .bus-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .bus-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #1a2a6c;
+        }
+
+        .bus-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .bus-route {
+            font-weight: bold;
+            color: #1a2a6c;
+            font-size: 1.2em;
+        }
+
+        .bus-model {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-size: 0.8em;
+        }
+
+        .bus-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .bus-license {
+            font-family: monospace;
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .filters {
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        .filter-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #1a2a6c;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .stats {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .last-update {
+            text-align: center;
+            color: #666;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .camera-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>香港巴士與電車實時監控系統</h1>
+            <div class="subtitle">實時追踪巴士位置、車型資訊與道路狀況</div>
+        </header>
+
+        <div class="dashboard">
+            <!-- 側邊欄 -->
+            <div class="sidebar">
+                <div class="filters">
+                    <h3 class="section-title">篩選條件</h3>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">路線選擇</label>
+                        <select id="routeFilter">
+                            <option value="">所有路線</option>
+                            <option value="101">101 - 中環 ↔ 觀塘</option>
+                            <option value="102">102 - 美孚 ↔ 筲箕灣</option>
+                            <option value="104">104 - 白田 ↔ 中環</option>
+                            <option value="112">112 - 蘇屋 ↔ 北角</option>
+                            <option value="968">968 - 元朗 ↔ 銅鑼灣</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">車型選擇</label>
+                        <select id="modelFilter">
+                            <option value="">所有車型</option>
+                            <option value="E500MMC">E500 MMC</option>
+                            <option value="E400">E400</option>
+                            <option value="Volvo B8L">Volvo B8L</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label class="filter-label">地區選擇</label>
+                        <select id="areaFilter">
+                            <option value="">所有地區</option>
+                            <option value="HK">香港島</option>
+                            <option value="KL">九龍</option>
+                            <option value="NT">新界</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <h3 class="section-title">實時統計</h3>
+                    <div class="stat-item">
+                        <span>在線巴士數量:</span>
+                        <span id="onlineBuses">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>監控攝像頭:</span>
+                        <span id="activeCameras">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>系統狀態:</span>
+                        <span style="color: #4CAF50;">正常運行</span>
+                    </div>
+                </div>
+                
+                <div class="last-update">
+                    最後更新: <span id="lastUpdateTime">載入中...</span>
+                </div>
+            </div>
+            
+            <!-- 主內容區 -->
+            <div class="main-content">
+                <!-- CCTV 監控區域 -->
+                <div class="cctv-section">
+                    <h2 class="section-title">道路實時監控</h2>
+                    <div class="camera-grid" id="cctvContainer">
+                        <!-- CCTV 畫面將通過 JavaScript 載入 -->
+                    </div>
+                </div>
+                
+                <!-- 巴士資訊區域 -->
+                <div class="bus-section">
+                    <h2 class="section-title">巴士實時資訊</h2>
+                    <div class="bus-list" id="busContainer">
+                        <!-- 巴士資訊將通過 JavaScript 載入 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置資訊
+        const CONFIG = {
+            refreshInterval: 120000, // 2分鐘更新一次
+            maxBuses: 50,
+            apiEndpoints: {
+                cctv: 'https://resource.data.one.gov.hk/td/cctv.xml',
+                bus: 'https://data.gov.hk/tc-data/api/3/action/datastore_search'
+            }
+        };
+
+        // 巴士資料模型
+        const BUS_MODELS = {
+            'E500MMC': { name: 'Alexander Dennis Enviro500 MMC', seats: 133 },
+            'E400': { name: 'Alexander Dennis Enviro400', seats: 77 },
+            'Volvo B8L': { name: 'Volvo B8L Wright Eclipse Gemini 3', seats: 129 }
+        };
+
+        // 巴士路線資料
+        const BUS_ROUTES = [
+            { number: '101', from: '觀塘', to: '中環', company: '九巴/城巴' },
+            { number: '102', from: '美孚', to: '筲箕灣', company: '九巴/城巴' },
+            { number: '104', from: '白田', to: '中環', company: '九巴/城巴' },
+            { number: '112', from: '蘇屋', to: '北角', company: '九巴/城巴' },
+            { number: '968', from: '元朗', to: '銅鑼灣', company: '九巴' }
+        ];
+
+        // CCTV 攝影機資料
+        const CCTV_CAMERAS = [
+            { id: 'C001', name: '紅磡海底隧道香港入口', location: '紅磡', area: 'KL' },
+            { id: 'C002', name: '東區海底隧道港島入口', location: '鰂魚涌', area: 'HK' },
+            { id: 'C003', name: '西區海底隧道九龍入口', location: '西九龍', area: 'KL' },
+            { id: 'C004', name: '青嶼幹線青衣入口', location: '青衣', area: 'NT' },
+            { id: 'C005', name: '獅子山隧道沙田入口', location: '沙田', area: 'NT' },
+            { id: 'C006', name: '香港仔隧道香港仔入口', location: '香港仔', area: 'HK' }
+        ];
+
+        // 系統主類
+        class TrafficMonitoringSystem {
+            constructor() {
+                this.buses = [];
+                this.filters = {
+                    route: '',
+                    model: '',
+                    area: ''
+                };
+                this.initializeEventListeners();
+                this.loadInitialData();
+                this.startAutoRefresh();
+            }
+
+            // 初始化事件監聽
+            initializeEventListeners() {
+                document.getElementById('routeFilter').addEventListener('change', (e) => {
+                    this.filters.route = e.target.value;
+                    this.renderBuses();
+                });
+
+                document.getElementById('modelFilter').addEventListener('change', (e) => {
+                    this.filters.model = e.target.value;
+                    this.renderBuses();
+                });
+
+                document.getElementById('areaFilter').addEventListener('change', (e) => {
+                    this.filters.area = e.target.value;
+                    this.renderBuses();
+                });
+            }
+
+            // 載入初始資料
+            loadInitialData() {
+                this.generateBusData();
+                this.renderCCTV();
+                this.renderBuses();
+                this.updateStats();
+                this.updateLastUpdateTime();
+            }
+
+            // 產生模擬巴士資料
+            generateBusData() {
+                this.buses = [];
+                const models = Object.keys(BUS_MODELS);
+                
+                for (let i = 0; i < 25; i++) {
+                    const route = BUS_ROUTES[Math.floor(Math.random() * BUS_ROUTES.length)];
+                    const model = models[Math.floor(Math.random() * models.length)];
+                    
+                    this.buses.push({
+                        id: `BUS${1000 + i}`,
+                        route: route.number,
+                        routeName: `${route.from} ↔ ${route.to}`,
+                        model: model,
+                        modelName: BUS_MODELS[model].name,
+                        licensePlate: this.generateLicensePlate(),
+                        company: route.company,
+                        location: this.generateLocation(),
+                        speed: Math.floor(20 + Math.random() * 40),
+                        passengers: Math.floor(Math.random() * BUS_MODELS[model].seats),
+                        timestamp: new Date()
+                    });
+                }
+            }
+
+            // 產生車牌號碼
+            generateLicensePlate() {
+                const letters = 'ABCDEFGHKLMNP';
+                const numbers = '0123456789';
+                
+                let plate = '';
+                plate += letters.charAt(Math.floor(Math.random() * letters.length));
+                plate += numbers.charAt(Math.floor(Math.random() * numbers.length));
+                plate += numbers.charAt(Math.floor(Math.random() * numbers.length));
+                plate += letters.charAt(Math.floor(Math.random() * letters.length));
+                plate += numbers.charAt(Math.floor(Math.random() * numbers.length));
+                plate += numbers.charAt(Math.floor(Math.random() * numbers.length));
+                
+                return plate;
+            }
+
+            // 產生位置資料
+            generateLocation() {
+                const areas = [
+                    { name: 'HK', lat: 22.25 + (Math.random() * 0.1), lng: 114.15 + (Math.random() * 0.1) },
+                    { name: 'KL', lat: 22.30 + (Math.random() * 0.1), lng: 114.15 + (Math.random() * 0.1) },
+                    { name: 'NT', lat: 22.35 + (Math.random() * 0.2), lng: 114.05 + (Math.random() * 0.2) }
+                ];
+                
+                const area = areas[Math.floor(Math.random() * areas.length)];
+                return area;
+            }
+
+            // 渲染 CCTV 畫面
+            renderCCTV() {
+                const container = document.getElementById('cctvContainer');
+                container.innerHTML = '';
+                
+                CCTV_CAMERAS.forEach(camera => {
+                    const cameraElement = document.createElement('div');
+                    cameraElement.className = 'camera-item';
+                    cameraElement.innerHTML = `
+                        <div class="camera-header">
+                            <h4>${camera.name}</h4>
+                            <span class="camera-status">實時</span>
+                        </div>
+                        <div class="camera-placeholder">
+                            <div>
+                                <div style="font-size: 2em;">📹</div>
+                                <div>運輸署 CCTV ${camera.id}</div>
+                                <div style="font-size: 0.8em; margin-top: 5px;">每2分鐘更新</div>
+                            </div>
+                        </div>
+                        <div class="camera-info">
+                            <p>位置: ${camera.location}</p>
+                            <p>區域: ${this.getAreaName(camera.area)}</p>
+                            <p>狀態: <span style="color: #4CAF50;">正常運作</span></p>
+                        </div>
+                    `;
+                    container.appendChild(cameraElement);
+                });
+            }
+
+            // 渲染巴士資訊
+            renderBuses() {
+                const container = document.getElementById('busContainer');
+                container.innerHTML = '';
+                
+                const filteredBuses = this.applyFilters(this.buses);
+                
+                if (filteredBuses.length === 0) {
+                    container.innerHTML = '<div class="bus-card" style="text-align: center; color: #666;">沒有符合條件的巴士資料</div>';
+                    return;
+                }
+                
+                filteredBuses.forEach(bus => {
+                    const busElement = document.createElement('div');
+                    busElement.className = 'bus-card';
+                    busElement.innerHTML = `
+                        <div class="bus-header">
+                            <div class="bus-route">${bus.route} 路線</div>
+                            <div class="bus-model">${bus.model}</div>
+                        </div>
+                        <div class="bus-details">
+                            <div>
+                                <strong>路線:</strong> ${bus.routeName}
+                            </div>
+                            <div>
+                                <strong>公司:</strong> ${bus.company}
+                            </div>
+                            <div>
+                                <strong>車牌:</strong> <span class="bus-license">${bus.licensePlate}</span>
+                            </div>
+                            <div>
+                                <strong>車型:</strong> ${bus.modelName}
+                            </div>
+                            <div>
+                                <strong>位置:</strong> ${this.getAreaName(bus.location.name)}
+                            </div>
+                            <div>
+                                <strong>速度:</strong> ${bus.speed} km/h
+                            </div>
+                            <div>
+                                <strong>乘客:</strong> ${bus.passengers} 人
+                            </div>
+                            <div>
+                                <strong>車輛ID:</strong> ${bus.id}
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(busElement);
+                });
+                
+                this.updateStats(filteredBuses.length);
+            }
+
+            // 應用篩選條件
+            applyFilters(buses) {
+                return buses.filter(bus => {
+                    if (this.filters.route && bus.route !== this.filters.route) return false;
+                    if (this.filters.model && bus.model !== this.filters.model) return false;
+                    if (this.filters.area && bus.location.name !== this.filters.area) return false;
+                    return true;
+                });
+            }
+
+            // 取得區域名稱
+            getAreaName(areaCode) {
+                const areas = {
+                    'HK': '香港島',
+                    'KL': '九龍',
+                    'NT': '新界'
+                };
+                return areas[areaCode] || areaCode;
+            }
+
+            // 更新統計資訊
+            updateStats(busCount = 0) {
+                document.getElementById('onlineBuses').textContent = busCount;
+                document.getElementById('activeCameras').textContent = CCTV_CAMERAS.length;
+            }
+
+            // 更新最後更新時間
+            updateLastUpdateTime() {
+                const now = new Date();
+                document.getElementById('lastUpdateTime').textContent = 
+                    `${now.toLocaleDateString('zh-HK')} ${now.toLocaleTimeString('zh-HK')}`;
+            }
+
+            // 開始自動更新
+            startAutoRefresh() {
+                setInterval(() => {
+                    this.generateBusData();
+                    this.renderBuses();
+                    this.updateLastUpdateTime();
+                    console.log('系統已自動更新');
+       
